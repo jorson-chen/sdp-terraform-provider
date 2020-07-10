@@ -49,26 +49,48 @@ resource "appgate_entitlement" "ping_entitlement" {
 The following arguments are supported:
 
 
-* `display_name`: (Required) This field is deprecated as of 5.1 in favor of 'appShortcut.name'. For backwards compatibility, it will set 'appShortcut.name' if it does not exist.
 * `disabled`: (Optional) If true, the Entitlement will be disregarded during authorization.
-* `site`: (Required) ID of the site for this Entitlement.
+* `site`: (Required) ID of the Site for this Entitlement.
+* `site_name`: (Optional) Name of the Site for this Entitlement. For convenience only.
 * `condition_logic`: (Optional) Whether all the Conditions must succeed to have access to this Entitlement or just one.
 * `conditions`: (Required) List of Condition IDs applies to this Entitlement.
 * `actions`: (Required) List of all IP Access actions in this Entitlement.
-* `app_shortcut`: (Optional) Publishes the configured URL as an app on the client using the display name as the app name.
+* `app_shortcuts`: (Optional) Array of App Shortcuts.
+* `app_shortcut_scripts`: (Optional) List of Entitlement Script IDs used for creating App Shortcuts dynamically.
 * `id`: (Required) ID of the object.
 * `name`: (Required) Name of the object.
 * `notes`: (Optional) Notes for the object. Used for documentation purposes.
-* `created`: (Optional) Create date.
-* `updated`: (Optional) Last update date.
 * `tags`: (Optional) Array of tags.
 
 
-### app_shortcut
-Publishes the configured URL as an app on the client using the display name as the app name.
+### conditions
+List of Condition IDs applies to this Entitlement.
 
-* `name`: (Required) Name for the App Shortcut which will be visible on the Client UI. Example: Accounting.
-* `url`: (Required) The URL that will be triggered on the OS to be handled. For example, an HTTPS URL will start the browser for the given URL. Example: https://service.company.com.
+### actions
+List of all IP Access actions in this Entitlement.
+
+* `subtype`:  (Optional)  Enum values: `icmp_up,icmp_down,icmpv6_up,icmpv6_down,udp_up,udp_down,tcp_up,tcp_down,ah_up,ah_down,esp_up,esp_down,gre_up,gre_down,http_up`Type of the IP Access action.
+* `action`:  (Optional)  Enum values: `allow,block,alert`Applied action to the traffic.
+* `hosts`:  (Optional) Hosts to apply the action to. See admin manual for possible values. Example: 10.0.0.1,10.0.0.0/24,hostname.company.com,dns://hostname.company.com,aws://security-group:accounting.
+* `ports`:  (Optional) Destination port. Multiple ports can be entered comma separated. Port ranges can be entered dash separated. Only valid for tcp and udp subtypes Example: 80,1024-65535.
+* `types`:  (Optional) ICMP type. Only valid for icmp subtypes. Example: 0-255.
+* `monitor`:  (Optional) Only available for tcp_up subtype. If enabled, Gateways will monitor this action for responsiveness and act accordingly. See admin manual for more details.
+#### hosts
+Hosts to apply the action to. See admin manual for possible values.
+#### ports
+Destination port. Multiple ports can be entered comma separated. Port ranges can be entered dash separated. Only valid for tcp and udp subtypes
+#### types
+ICMP type. Only valid for icmp subtypes.
+#### monitor
+Only available for tcp_up subtype. If enabled, Gateways will monitor this action for responsiveness and act accordingly. See admin manual for more details.
+* `enabled`: (Optional) undefined
+* `timeout`: (Optional) Number of seconds the action needs to be unresponsive to mark the action unhealthy.
+### app_shortcuts
+Array of App Shortcuts.
+
+* `name`:  (Optional) Name for the App Shortcut which will be visible on the Client UI. Example: Accounting Software.
+* `description`:  (Optional) Description for the App Shortcut which will be visible on the Client UI. Example: This app will get you to the Accounting Software..
+* `url`:  (Optional) The URL that will be triggered on the OS to be handled. For example, an HTTPS URL will start the browser for the given URL. Example: https://service.company.com.
 * `color_code`:  (Optional)  default value `1` The code of the published app on the client.
 - 1: Light Green
 - 2: Green
@@ -90,6 +112,12 @@ Publishes the configured URL as an app on the client using the display name as t
 - 18: Purple
 - 19: Blue Gray
 - 20: Near Black
+
+### app_shortcut_scripts
+List of Entitlement Script IDs used for creating App Shortcuts dynamically.
+
+### tags
+Array of tags.
 
 
 

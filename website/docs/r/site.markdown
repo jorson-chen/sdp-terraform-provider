@@ -42,7 +42,8 @@ resource "appgate_site" "gbg_site" {
 The following arguments are supported:
 
 
-* `short_name`: (Optional) A short 4 letter name for the site
+* `short_name`: (Optional) A short 4 letter name for the Site to be displayed on the Client.
+* `description`: (Optional) Description of the Site to be displayed on the Client.
 * `network_subnets`: (Optional) Network subnets in CIDR format to define the Site's boundaries. They are added as routes by the Client.
 * `ip_pool_mappings`: (Optional) List of IP Pool mappings for this specific Site. When IPs are allocated this Site, they will be mapped to a new one using this setting.
 * `default_gateway`: (Optional) Default Gateway configuration.
@@ -52,11 +53,17 @@ The following arguments are supported:
 * `id`: (Required) ID of the object.
 * `name`: (Required) Name of the object.
 * `notes`: (Optional) Notes for the object. Used for documentation purposes.
-* `created`: (Optional) Create date.
-* `updated`: (Optional) Last update date.
 * `tags`: (Optional) Array of tags.
 
 
+### network_subnets
+Network subnets in CIDR format to define the Site's boundaries. They are added as routes by the Client.
+
+### ip_pool_mappings
+List of IP Pool mappings for this specific Site. When IPs are allocated this Site, they will be mapped to a new one using this setting.
+
+* `from`:  (Optional) IP Pool ID to map from. If a user is authorizing with this IP Pool via Identity Provider assignment and has access to this Site, mapping will occur for that user. Example: 4c07bc67-57ea-42dd-b702-c2d6c45419fc.
+* `to`:  (Optional) IP Pool ID to map to. Example: 8c07bc67-5711-42dd-b702-c2d6c45419f8.
 ### default_gateway
 Default Gateway configuration.
 
@@ -136,6 +143,9 @@ Resolvers to resolve GCP machine by querying Google web services.
 * `update_interval`: (Optional) How often will the resolver poll the server. In seconds.
 * `project_filter`: (Optional) GCP project filter.
 * `instance_filter`: (Optional) GCP instance filter.
+### tags
+Array of tags.
+
 
 
 

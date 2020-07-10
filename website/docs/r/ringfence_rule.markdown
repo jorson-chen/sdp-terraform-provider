@@ -1,7 +1,7 @@
 ---
 layout: "appgate"
 page_title: "APPGATE: appgate_ringfence_rule"
-sidebar_current: "docs-appgate-resource-ringfence-rule"
+sidebar_current: "docs-appgate-resource-ringfence_rule"
 description: |-
    Create a new Ringfence Rule.
 ---
@@ -57,6 +57,7 @@ resource "appgate_ringfence_rule" "basic_rule" {
   }
 
 }
+
 ```
 
 ## Argument Reference
@@ -68,18 +69,16 @@ The following arguments are supported:
 * `id`: (Required) ID of the object.
 * `name`: (Required) Name of the object.
 * `notes`: (Optional) Notes for the object. Used for documentation purposes.
-* `created`: (Optional) Create date.
-* `updated`: (Optional) Last update date.
 * `tags`: (Optional) Array of tags.
 
 
 ### actions
 List of all ringfence actions in this Ringfence Rule.
 
-* `protocol`: (Required)  Enum values: `icmp,icmpv6,udp,tcp`Protocol of the ringfence action.
-* `direction`: (Required)  Enum values: `up,down`The direction of the action
-* `action`: (Required)  Enum values: `allow,block`Applied action to the traffic.
-* `hosts`: (Required) Destination address. IP address or hostname.
+* `protocol`:  (Optional)  Enum values: `icmp,icmpv6,udp,tcp`Protocol of the ringfence action.
+* `direction`:  (Optional)  Enum values: `up,down,out,in`The direction of the action
+* `action`:  (Optional)  Enum values: `allow,block`Applied action to the traffic.
+* `hosts`:  (Optional) Destination address. IP address or hostname.
 * `ports`:  (Optional) Destination port. Multiple ports can be entered comma separated. Port ranges can be entered dash separated. Only valid for tcp and udp subtypes. Example: 80,443,1024-2048.
 * `types`:  (Optional) ICMP type. Only valid for icmp protocol.
 #### hosts
@@ -88,6 +87,9 @@ Destination address. IP address or hostname.
 Destination port. Multiple ports can be entered comma separated. Port ranges can be entered dash separated. Only valid for tcp and udp subtypes.
 #### types
 ICMP type. Only valid for icmp protocol.
+### tags
+Array of tags.
+
 
 
 

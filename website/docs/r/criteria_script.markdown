@@ -33,6 +33,9 @@ The following arguments are supported:
 * `tags`: (Optional) Array of tags.
 
 
+### tags
+Array of tags.
+
 
 
 

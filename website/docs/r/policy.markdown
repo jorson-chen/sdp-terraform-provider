@@ -58,10 +58,26 @@ The following arguments are supported:
 * `id`: (Required) ID of the object.
 * `name`: (Required) Name of the object.
 * `notes`: (Optional) Notes for the object. Used for documentation purposes.
-* `created`: (Optional) Create date.
-* `updated`: (Optional) Last update date.
 * `tags`: (Optional) Array of tags.
 
+
+### entitlements
+List of Entitlement IDs in this Policy.
+
+### entitlement_links
+List of Entitlement tags in this Policy.
+
+### ringfence_rules
+List of Ringfence Rule IDs in this Policy.
+
+### ringfence_rule_links
+List of Ringfence Rule tags in this Policy.
+
+### administrative_roles
+List of Administrative Role IDs in this Policy.
+
+### tags
+Array of tags.
 
 
 
