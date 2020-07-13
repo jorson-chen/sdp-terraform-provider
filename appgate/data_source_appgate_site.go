@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appgate/terraform-provider-appgate/client/v12/openapi"
+	"github.com/appgate/terraform-provider-appgate/client/v13/openapi"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 

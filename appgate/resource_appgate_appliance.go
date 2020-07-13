@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/appgate/terraform-provider-appgate/client/v12/openapi"
+	"github.com/appgate/terraform-provider-appgate/client/v13/openapi"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -587,7 +587,7 @@ func resourceAppgateAppliance() *schema.Resource {
 			"gateway": {
 				Type:          schema.TypeSet,
 				Optional:      true,
-				ConflictsWith: []string{"iot_connector"},
+				ConflictsWith: []string{"connector"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"enabled": {
@@ -727,7 +727,7 @@ func resourceAppgateAppliance() *schema.Resource {
 				},
 			},
 
-			"iot_connector": {
+			"connector": {
 				Type:          schema.TypeSet,
 				Optional:      true,
 				ConflictsWith: []string{"gateway"},
@@ -740,7 +740,7 @@ func resourceAppgateAppliance() *schema.Resource {
 							Default:  false,
 						},
 
-						"clients": {
+						"express_clients": {
 							Type:     schema.TypeList,
 							Optional: true,
 							Elem: &schema.Resource{
@@ -754,9 +754,48 @@ func resourceAppgateAppliance() *schema.Resource {
 										Optional: true,
 									},
 
-									"sources": reUsableSchemas["allow_sources"],
+									"allow_resources": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"address": {
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: validateIPaddress,
+												},
+												"netmask": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+											},
+										},
+									},
 
-									"snat": {
+									"snat_to_resources": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"advanced_clients": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"device_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+
+									"allow_resources": reUsableSchemas["allow_sources"],
+
+									"snat_to_resources": {
 										Type:     schema.TypeBool,
 										Optional: true,
 									},
@@ -927,12 +966,12 @@ func resourceAppgateApplianceCreate(d *schema.ResourceData, meta interface{}) er
 		args.SetLogForwarder(lf)
 	}
 
-	if v, ok := d.GetOk("iot_connector"); ok {
-		iot, err := readIotConnectorFromConfig(v.(*schema.Set).List())
+	if v, ok := d.GetOk("connector"); ok {
+		connector, err := readConnectorFromConfig(v.(*schema.Set).List())
 		if err != nil {
 			return err
 		}
-		args.SetIotConnector(iot)
+		args.SetConnector(connector)
 	}
 
 	if v, ok := d.GetOk("rsyslog_destinations"); ok {
@@ -1105,6 +1144,23 @@ func readNtpServersFromConfig(input []interface{}) ([]openapi.ApplianceAllOfNtpS
 	return r, nil
 }
 
+func readAllowResourcesFromConfig(input []interface{}) ([]openapi.ApplianceAllOfConnectorAllowResources, error) {
+	alowResources := make([]openapi.ApplianceAllOfConnectorAllowResources, 0)
+	for _, s := range input {
+		raw := s.(map[string]interface{})
+		alowResource := openapi.ApplianceAllOfConnectorAllowResources{}
+		if v, ok := raw["address"]; ok {
+			alowResource.SetAddress(v.(string))
+		}
+		if v, ok := raw["netmask"]; ok {
+			alowResource.SetNetmask(int32(v.(int)))
+		}
+
+		alowResources = append(alowResources, alowResource)
+	}
+	return alowResources, nil
+}
+
 func readAllowSourcesFromConfig(input []interface{}) ([]map[string]interface{}, error) {
 	r := make([]map[string]interface{}, 0)
 	for _, s := range input {
@@ -1178,12 +1234,8 @@ func resourceAppgateApplianceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("name", appliance.Name)
 	d.Set("tags", appliance.Tags)
 	d.Set("appliance_id", appliance.Id)
-
-	// d.Set("client_interface", saveClientInterface)
-	// d.Set("networking", appliance.GetNetworking())
 	d.Set("notes", appliance.GetNotes())
 	d.Set("hostname", appliance.GetHostname())
-	// d.Set("peer_interface", appliance.PeerInterface)
 
 	if ok, _ := appliance.GetActivatedOk(); *ok {
 		d.Set("seed_file", "")
@@ -1367,13 +1419,13 @@ func resourceAppgateApplianceUpdate(d *schema.ResourceData, meta interface{}) er
 		originalAppliance.SetLogForwarder(lf)
 	}
 
-	if d.HasChange("iot_connector") {
-		_, n := d.GetChange("iot_connector")
-		iot, err := readIotConnectorFromConfig(n.(*schema.Set).List())
+	if d.HasChange("connector") {
+		_, n := d.GetChange("connector")
+		connector, err := readConnectorFromConfig(n.(*schema.Set).List())
 		if err != nil {
 			return err
 		}
-		originalAppliance.SetIotConnector(iot)
+		originalAppliance.SetConnector(connector)
 	}
 
 	if d.HasChange("rsyslog_destinations") {
@@ -1789,7 +1841,7 @@ func readLogForwardFromConfig(logforwards []interface{}) (openapi.ApplianceAllOf
 		}
 
 		if v := raw["elasticsearch"].(*schema.Set); v.Len() > 0 {
-			elasticsearch := openapi.ApplianceAllOfLogForwarderElasticsearch{}
+			elasticsearch := openapi.Elasticsearch{}
 			for _, s := range v.List() {
 				r := s.(map[string]interface{})
 				if v, ok := r["url"]; ok {
@@ -1851,8 +1903,8 @@ func readLogForwardFromConfig(logforwards []interface{}) (openapi.ApplianceAllOf
 	}
 	return val, nil
 }
-func readIotConnectorFromConfig(iots []interface{}) (openapi.ApplianceAllOfIotConnector, error) {
-	val := openapi.ApplianceAllOfIotConnector{}
+func readConnectorFromConfig(iots []interface{}) (openapi.ApplianceAllOfConnector, error) {
+	val := openapi.ApplianceAllOfConnector{}
 	for _, iot := range iots {
 		if iot == nil {
 			continue
@@ -1863,10 +1915,10 @@ func readIotConnectorFromConfig(iots []interface{}) (openapi.ApplianceAllOfIotCo
 		if v, ok := raw["enabled"]; ok {
 			val.SetEnabled(v.(bool))
 		}
-		if v := raw["clients"]; len(v.([]interface{})) > 0 {
-			clients := make([]openapi.ApplianceAllOfIotConnectorClients, 0)
+		if v := raw["express_clients"]; len(v.([]interface{})) > 0 {
+			expressClients := make([]openapi.ApplianceAllOfConnectorExpressClients, 0)
 			for _, c := range v.([]interface{}) {
-				client := openapi.ApplianceAllOfIotConnectorClients{}
+				client := openapi.ApplianceAllOfConnectorExpressClients{}
 				r := c.(map[string]interface{})
 				if v, ok := r["name"]; ok {
 					client.SetName(v.(string))
@@ -1875,19 +1927,44 @@ func readIotConnectorFromConfig(iots []interface{}) (openapi.ApplianceAllOfIotCo
 					client.SetDeviceId(v.(string))
 				}
 				// allowed sources
-				if v := r["sources"]; len(v.([]interface{})) > 0 {
+				if v := r["allow_resources"]; len(v.([]interface{})) > 0 {
+					sources, err := readAllowResourcesFromConfig(v.([]interface{}))
+					if err != nil {
+						return val, err
+					}
+					client.SetAllowResources(sources)
+				}
+				if v, ok := r["snat_to_resources"]; ok {
+					client.SetSnatToResources(v.(bool))
+				}
+				expressClients = append(expressClients, client)
+			}
+			val.SetExpressClients(expressClients)
+		}
+		if v := raw["advanced_clients"]; len(v.([]interface{})) > 0 {
+			advancedClients := make([]openapi.ApplianceAllOfConnectorAdvancedClients, 0)
+			for _, c := range v.([]interface{}) {
+				client := openapi.ApplianceAllOfConnectorAdvancedClients{}
+				r := c.(map[string]interface{})
+				if v, ok := r["name"]; ok {
+					client.SetName(v.(string))
+				}
+				if v, ok := r["device_id"]; ok {
+					client.SetDeviceId(v.(string))
+				}
+				if v := r["allow_resources"]; len(v.([]interface{})) > 0 {
 					sources, err := readAllowSourcesFromConfig(v.([]interface{}))
 					if err != nil {
 						return val, err
 					}
-					client.SetSources(sources)
+					client.SetAllowResources(sources)
 				}
-				if v, ok := r["snat"]; ok {
-					client.SetSnat(v.(bool))
+				if v, ok := r["snat_to_tunnel"]; ok {
+					client.SetSnatToTunnel(v.(bool))
 				}
-				clients = append(clients, client)
+				advancedClients = append(advancedClients, client)
 			}
-			val.SetClients(clients)
+			val.SetAdvancedClients(advancedClients)
 		}
 	}
 	return val, nil

@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/appgate/terraform-provider-appgate/client/v12/openapi"
+	"github.com/appgate/terraform-provider-appgate/client/v13/openapi"
 	"github.com/google/uuid"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -128,8 +128,8 @@ func resourceAppgateEntitlement() *schema.Resource {
 				},
 			},
 
-			"app_shortcut": {
-				Type:       schema.TypeSet,
+			"app_shortcuts": {
+				Type:       schema.TypeList,
 				Optional:   true,
 				ConfigMode: schema.SchemaConfigModeAttr,
 				Elem: &schema.Resource{
@@ -138,6 +138,11 @@ func resourceAppgateEntitlement() *schema.Resource {
 						"name": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 
 						"url": {
@@ -194,7 +199,7 @@ func resourceAppgateEntitlementRuleCreate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return err
 		}
-		args.SetAppShortcut(appShortcut)
+		args.SetAppShortcuts(appShortcut)
 	}
 
 	request := api.EntitlementsPost(context.Background())
@@ -224,7 +229,6 @@ func resourceAppgateEntitlementRuleRead(d *schema.ResourceData, meta interface{}
 	}
 	d.SetId(ent.Id)
 	d.Set("entitlement_id", ent.Id)
-	d.Set("displayName", ent.DisplayName) // Deprecated in 5.1
 	d.Set("disabled", ent.Disabled)
 	d.Set("notes", ent.Notes)
 	d.Set("actions", ent.Actions)
@@ -287,13 +291,13 @@ func resourceAppgateEntitlementRuleUpdate(d *schema.ResourceData, meta interface
 		orginalEntitlment.SetActions(actions)
 	}
 
-	if d.HasChange("app_shortcut") {
-		_, n := d.GetChange("app_shortcut")
-		appShortcut, err := readAppShortcutFromConfig(n.(*schema.Set).List())
+	if d.HasChange("app_shortcuts") {
+		_, n := d.GetChange("app_shortcuts")
+		appShortcuts, err := readAppShortcutFromConfig(n.(*schema.Set).List())
 		if err != nil {
 			return err
 		}
-		orginalEntitlment.SetAppShortcut(appShortcut)
+		orginalEntitlment.SetAppShortcuts(appShortcuts)
 	}
 
 	req := api.EntitlementsIdPut(ctx, d.Id())
@@ -375,22 +379,28 @@ func readConditionActionsFromConfig(actions []interface{}) ([]openapi.Entitlemen
 	return result, nil
 }
 
-func readAppShortcutFromConfig(shortcuts []interface{}) (openapi.EntitlementAllOfAppShortcut, error) {
-	result := openapi.EntitlementAllOfAppShortcut{}
+func readAppShortcutFromConfig(shortcuts []interface{}) ([]openapi.AppShortcut, error) {
+	result := make([]openapi.AppShortcut, 0)
+
 	for _, shortcut := range shortcuts {
 		if shortcut == nil {
 			continue
 		}
 		raw := shortcut.(map[string]interface{})
+		shortcut := openapi.AppShortcut{}
 		if v, ok := raw["name"]; ok {
-			result.SetName(v.(string))
+			shortcut.SetName(v.(string))
+		}
+		if v, ok := raw["description"]; ok {
+			shortcut.SetDescription(v.(string))
 		}
 		if v, ok := raw["url"]; ok {
-			result.SetUrl(v.(string))
+			shortcut.SetUrl(v.(string))
 		}
 		if v, ok := raw["color_code"]; ok {
-			result.SetColorCode(int32(v.(int)))
+			shortcut.SetColorCode(int32(v.(int)))
 		}
+		result = append(result, shortcut)
 	}
 	return result, nil
 }
