@@ -33,9 +33,11 @@ type Config struct {
 
 // Client is the appgate API client.
 type Client struct {
+	// The AuthToken required for subsequent API calls.
 	Token string
-	UUID  string
-	API   *openapi.APIClient
+	// The controller version
+	ControllerVersion string
+	API               *openapi.APIClient
 }
 
 // Client creates
@@ -73,19 +75,19 @@ func (c *Config) Client() (*Client, error) {
 	}
 	apiClient := openapi.NewAPIClient(clientCfg)
 
-	token, err := getToken(apiClient, c)
+	loginResponse, err := loginResponse(apiClient, c)
 	if err != nil {
 		return nil, err
 	}
-
 	client := &Client{
-		API:   apiClient,
-		Token: token,
+		API:               apiClient,
+		Token:             fmt.Sprintf("Bearer %s", *openapi.PtrString(*loginResponse.Token)),
+		ControllerVersion: *openapi.PtrString(*loginResponse.Version),
 	}
 	return client, nil
 }
 
-func getToken(apiClient *openapi.APIClient, cfg *Config) (string, error) {
+func loginResponse(apiClient *openapi.APIClient, cfg *Config) (openapi.LoginResponse, error) {
 
 	ctx := context.Background()
 	// Login first, save token
@@ -98,7 +100,7 @@ func getToken(apiClient *openapi.APIClient, cfg *Config) (string, error) {
 
 	loginResponse, _, err := apiClient.LoginApi.LoginPost(ctx).LoginRequest(loginOpts).Execute()
 	if err != nil {
-		return "", err
+		return loginResponse, err
 	}
-	return fmt.Sprintf("Bearer %s", *openapi.PtrString(*loginResponse.Token)), nil
+	return loginResponse, nil
 }
